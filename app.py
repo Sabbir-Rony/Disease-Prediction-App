@@ -16,9 +16,9 @@ import os
 def connect_db():
     try:
         conn = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",
+            host="db4free.net",
+            user="sabbir_1420",
+            password="Sabbir1420",
             database="disease1_db"
         )
         return conn
@@ -251,3 +251,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
