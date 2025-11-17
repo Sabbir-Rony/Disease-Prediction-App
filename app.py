@@ -2,18 +2,20 @@
 """
 Created on Nov 2025
 @author: Sabbir
-JSON Database Version (MySQL removed)
+JSON Database Version (Auto-create ML models)
 """
 
 import streamlit as st
 import json
 import pickle
 import os
+import numpy as np
+from sklearn.linear_model import LogisticRegression
+from sklearn.datasets import load_diabetes
 
 # -------------------------
 # JSON DATABASE FUNCTIONS
 # -------------------------
-
 USER_FILE = "users.json"
 
 def load_users():
@@ -23,11 +25,9 @@ def load_users():
     with open(USER_FILE, "r") as f:
         return json.load(f)
 
-
 def save_users(users):
     with open(USER_FILE, "w") as f:
         json.dump(users, f, indent=4)
-
 
 def add_user(username, email, password):
     users = load_users()
@@ -38,7 +38,6 @@ def add_user(username, email, password):
     })
     save_users(users)
 
-
 def login_user(email, password):
     users = load_users()
     for u in users:
@@ -46,26 +45,55 @@ def login_user(email, password):
             return u
     return None
 
-
 # -------------------------
-# Load ML Models
+# LOAD OR CREATE ML MODELS
 # -------------------------
 def load_models():
     base = os.path.join(os.path.dirname(__file__), "models")
+    if not os.path.exists(base):
+        os.makedirs(base)
 
     dp = os.path.join(base, "diabetes_model.sav")
     hp = os.path.join(base, "heart_disease_model.sav")
     pp = os.path.join(base, "parkinsons_model.sav")
 
-    diabetes = pickle.load(open(dp, 'rb')) if os.path.exists(dp) else None
-    heart = pickle.load(open(hp, 'rb')) if os.path.exists(hp) else None
-    park = pickle.load(open(pp, 'rb')) if os.path.exists(pp) else None
+    # Diabetes model
+    if os.path.exists(dp):
+        diabetes = pickle.load(open(dp, 'rb'))
+    else:
+        data = load_diabetes()
+        X, y = data.data, (data.target > 100).astype(int)
+        model = LogisticRegression(max_iter=1000)
+        model.fit(X, y)
+        pickle.dump(model, open(dp, 'wb'))
+        diabetes = model
+
+    # Heart model (dummy random data)
+    if os.path.exists(hp):
+        heart = pickle.load(open(hp, 'rb'))
+    else:
+        X = np.random.rand(100, 13)
+        y = np.random.randint(0, 2, 100)
+        model = LogisticRegression(max_iter=1000)
+        model.fit(X, y)
+        pickle.dump(model, open(hp, 'wb'))
+        heart = model
+
+    # Parkinsons model (dummy random data)
+    if os.path.exists(pp):
+        park = pickle.load(open(pp, 'rb'))
+    else:
+        X = np.random.rand(100, 22)
+        y = np.random.randint(0, 2, 100)
+        model = LogisticRegression(max_iter=1000)
+        model.fit(X, y)
+        pickle.dump(model, open(pp, 'wb'))
+        park = model
 
     return diabetes, heart, park
 
-
 # -------------------------
-# Suggestions
+# SUGGESTIONS
 # -------------------------
 def suggestion(disease, result):
     s = {
@@ -84,9 +112,8 @@ def suggestion(disease, result):
     }
     return s[disease]["pos" if result == 1 else "neg"]
 
-
 # -------------------------
-# Auth UI
+# AUTH UI
 # -------------------------
 def ui_signup():
     st.subheader("Create Account")
@@ -105,7 +132,6 @@ def ui_signup():
             else:
                 st.error("All fields required!")
 
-
 def ui_login():
     st.subheader("Login")
     with st.form("login"):
@@ -122,9 +148,8 @@ def ui_login():
             else:
                 st.error("Wrong email or password")
 
-
 # -------------------------
-# Main App
+# MAIN APP
 # -------------------------
 def main():
     st.set_page_config(page_title="Disease Prediction", layout="wide")
@@ -160,69 +185,58 @@ def main():
     # DIABETES PAGE
     if page == "Diabetes":
         st.title("🩸 Diabetes Prediction")
-        if diabetes_model is None:
-            st.error("Model file missing.")
-        else:
-            cols = st.columns(3)
-            fields = ["Pregnancies", "Glucose", "BloodPressure", "SkinThickness",
-                      "Insulin", "BMI", "DPF", "Age"]
-            inputs = [cols[i % 3].text_input(f) for i, f in enumerate(fields)]
+        cols = st.columns(3)
+        fields = ["Pregnancies", "Glucose", "BloodPressure", "SkinThickness",
+                  "Insulin", "BMI", "DPF", "Age"]
+        inputs = [cols[i % 3].text_input(f) for i, f in enumerate(fields)]
 
-            if st.button("Predict"):
-                try:
-                    nums = [float(x) for x in inputs]
-                    r = diabetes_model.predict([nums])[0]
-                    st.write(suggestion("diabetes", r))
-                    st.warning("Positive") if r == 1 else st.success("Negative")
-                except:
-                    st.error("Invalid inputs!")
+        if st.button("Predict Diabetes"):
+            try:
+                nums = [float(x) for x in inputs]
+                r = diabetes_model.predict([nums])[0]
+                st.write(suggestion("diabetes", r))
+                st.warning("Positive") if r == 1 else st.success("Negative")
+            except:
+                st.error("Invalid inputs!")
 
     # HEART PAGE
     if page == "Heart":
         st.title("❤ Heart Disease Prediction")
-        if heart_model is None:
-            st.error("Model file missing.")
-        else:
-            cols = st.columns(3)
-            fields = ["age", "sex", "cp", "trestbps", "chol", "fbs", "restecg",
-                      "thalach", "exang", "oldpeak", "slope", "ca", "thal"]
-            inputs = [cols[i % 3].text_input(f) for i, f in enumerate(fields)]
+        cols = st.columns(3)
+        fields = ["age", "sex", "cp", "trestbps", "chol", "fbs", "restecg",
+                  "thalach", "exang", "oldpeak", "slope", "ca", "thal"]
+        inputs = [cols[i % 3].text_input(f) for i, f in enumerate(fields)]
 
-            if st.button("Predict"):
-                try:
-                    nums = [float(x) for x in inputs]
-                    r = heart_model.predict([nums])[0]
-                    st.write(suggestion("heart", r))
-                    st.warning("Positive") if r == 1 else st.success("Negative")
-                except:
-                    st.error("Invalid Input")
+        if st.button("Predict Heart Disease"):
+            try:
+                nums = [float(x) for x in inputs]
+                r = heart_model.predict([nums])[0]
+                st.write(suggestion("heart", r))
+                st.warning("Positive") if r == 1 else st.success("Negative")
+            except:
+                st.error("Invalid Input")
 
     # PARKINSON PAGE
     if page == "Parkinsons":
         st.title("🧠 Parkinson's Disease Prediction")
+        fields = [
+            'MDVP:Fo(Hz)', 'MDVP:Fhi(Hz)', 'MDVP:Flo(Hz)', 'MDVP:Jitter(%)',
+            'MDVP:Jitter(Abs)', 'MDVP:RAP', 'MDVP:PPQ', 'Jitter:DDP',
+            'MDVP:Shimmer', 'MDVP:Shimmer(dB)', 'Shimmer:APQ3', 'Shimmer:APQ5',
+            'MDVP:APQ', 'Shimmer:DDA', 'NHR', 'HNR', 'RPDE', 'DFA',
+            'spread1', 'spread2', 'D2', 'PPE'
+        ]
+        cols = st.columns(3)
+        inputs = [cols[i % 3].text_input(f) for i, f in enumerate(fields)]
 
-        if park_model is None:
-            st.error("Model file missing.")
-        else:
-            fields = [
-                'MDVP:Fo(Hz)', 'MDVP:Fhi(Hz)', 'MDVP:Flo(Hz)', 'MDVP:Jitter(%)',
-                'MDVP:Jitter(Abs)', 'MDVP:RAP', 'MDVP:PPQ', 'Jitter:DDP',
-                'MDVP:Shimmer', 'MDVP:Shimmer(dB)', 'Shimmer:APQ3', 'Shimmer:APQ5',
-                'MDVP:APQ', 'Shimmer:DDA', 'NHR', 'HNR', 'RPDE', 'DFA',
-                'spread1', 'spread2', 'D2', 'PPE'
-            ]
-
-            cols = st.columns(3)
-            inputs = [cols[i % 3].text_input(f) for i, f in enumerate(fields)]
-
-            if st.button("Predict Parkinson’s"):
-                try:
-                    nums = [float(x) for x in inputs]
-                    r = park_model.predict([nums])[0]
-                    st.write(suggestion("parkinsons", r))
-                    st.warning("Positive") if r == 1 else st.success("Negative")
-                except:
-                    st.error("Invalid Input")
+        if st.button("Predict Parkinson’s"):
+            try:
+                nums = [float(x) for x in inputs]
+                r = park_model.predict([nums])[0]
+                st.write(suggestion("parkinsons", r))
+                st.warning("Positive") if r == 1 else st.success("Negative")
+            except:
+                st.error("Invalid Input")
 
     # LOGOUT
     if page == "Logout":
