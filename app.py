@@ -23,8 +23,7 @@ def connect_db():
             port=3306
         )
         return conn
-     except Exception as e:
-        st.error(f"DB connection failed: {e}")
+     except:
         return None
 
 
@@ -253,6 +252,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
