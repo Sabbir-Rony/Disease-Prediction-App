@@ -20,9 +20,11 @@ def connect_db():
             user="sabbir_1420",
             password="Sabbir1420",
             database="disease1_db"
+            port=3306
         )
         return conn
-    except:
+     except Exception as e:
+        st.error(f"DB connection failed: {e}")
         return None
 
 
@@ -251,4 +253,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
