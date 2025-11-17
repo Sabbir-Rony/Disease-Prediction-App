@@ -51,7 +51,7 @@ def login_user(email, password):
 # Load ML Models
 # -------------------------
 def load_models():
-    base = "models"
+    base = os.path.join(os.path.dirname(__file__), "models")
 
     dp = os.path.join(base, "diabetes_model.sav")
     hp = os.path.join(base, "heart_disease_model.sav")
@@ -70,16 +70,16 @@ def load_models():
 def suggestion(disease, result):
     s = {
         "diabetes": {
-            "pos": "Follow a controlled diet with low sugar and refined carbs.Take your medicines regularly and check blood glucose as advised.Exercise daily and avoid stress to keep your sugar stable.",
-            "neg": "Maintain a healthy weight and eat balanced meals with less sugar.Exercise regularly to keep insulin levels normal.Go for routine checkups if you have a family history of diabetes."
+            "pos": "Follow a controlled diet with low sugar. Take medicines regularly. Exercise daily.",
+            "neg": "Maintain healthy weight, eat balanced food, exercise regularly."
         },
         "heart": {
-            "pos": "Follow a low-salt and low-fat diet strictly.Take heart medications exactly as prescribed.Avoid smoking, alcohol, and heavy stress.Do light exercise only after your doctor approves.",
-            "neg": "Eat heart-healthy foods like vegetables, fruits, and lean proteins.Exercise regularly to keep your heart strong.Avoid smoking and control cholesterol levels.Go for routine heart checkups if you have risk factors."
+            "pos": "Follow low-fat diet. Take medications on time. Avoid smoking. Reduce stress.",
+            "neg": "Eat vegetables, fruits, lean protein. Do regular exercise."
         },
         "parkinsons": {
-            "pos": "Take your Parkinson’s medications consistently and on time.Do regular physiotherapy to keep movement flexible.Avoid falls by keeping your home safe and walking carefully.Follow up with a neurologist regularly.",
-            "neg": "Exercise daily to keep your brain and nerves healthy.Eat antioxidant-rich foods like fruits and vegetables.Avoid exposure to toxins, chemicals, and pesticides.Protect your head from injuries and maintain overall brain health."
+            "pos": "Take medicines on time. Do physiotherapy. Walk carefully. Visit neurologist.",
+            "neg": "Exercise daily. Eat antioxidant-rich foods. Avoid toxins."
         }
     }
     return s[disease]["pos" if result == 1 else "neg"]
@@ -155,7 +155,7 @@ def main():
     if page == "Home":
         st.header(f"Welcome, {st.session_state.username} 👋")
         st.header("DISEASE PREDICTION MODEL")
-        st.info("Disease prediction uses medical data and machine learning models to estimate the likelihood of a person developing a certain illness.")
+        st.info("Disease prediction uses ML to estimate disease risk.")
 
     # DIABETES PAGE
     if page == "Diabetes":
