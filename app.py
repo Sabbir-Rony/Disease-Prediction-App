@@ -2,65 +2,48 @@
 """
 Created on Nov 2025
 @author: Sabbir
-Clean + Fixed Parkinsons Page
+JSON Database Version (MySQL removed)
 """
 
 import streamlit as st
-import mysql.connector
+import json
 import pickle
 import os
 
 # -------------------------
-# Database Functions
+# JSON DATABASE FUNCTIONS
 # -------------------------
-def connect_db():
-    try:
-        conn = mysql.connector.connect(
-            host="db4free.net",
-            user="sabbir_1420",
-            password="Sabbir1420",
-            database="disease1_db"
-        )
-        return conn
-    except:
-        return None
+
+USER_FILE = "users.json"
+
+def load_users():
+    if not os.path.exists(USER_FILE):
+        with open(USER_FILE, "w") as f:
+            json.dump([], f)
+    with open(USER_FILE, "r") as f:
+        return json.load(f)
 
 
-def create_user_table():
-    conn = connect_db()
-    if conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            username VARCHAR(100),
-            email VARCHAR(100),
-            password VARCHAR(100)
-        )
-        """)
-        conn.commit()
-        conn.close()
+def save_users(users):
+    with open(USER_FILE, "w") as f:
+        json.dump(users, f, indent=4)
 
 
 def add_user(username, email, password):
-    conn = connect_db()
-    if conn:
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO users(username, email, password) VALUES (%s,%s,%s)",
-                       (username, email, password))
-        conn.commit()
-        conn.close()
+    users = load_users()
+    users.append({
+        "username": username,
+        "email": email,
+        "password": password
+    })
+    save_users(users)
 
 
 def login_user(email, password):
-    conn = connect_db()
-    if conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE email=%s AND password=%s",
-                       (email, password))
-        u = cursor.fetchone()
-        conn.close()
-        return u
+    users = load_users()
+    for u in users:
+        if u["email"] == email and u["password"] == password:
+            return u
     return None
 
 
@@ -68,7 +51,7 @@ def login_user(email, password):
 # Load ML Models
 # -------------------------
 def load_models():
-    base = r"C:\Users\Sabbir Roni\Desktop\models"
+    base = "models"
 
     dp = os.path.join(base, "diabetes_model.sav")
     hp = os.path.join(base, "heart_disease_model.sav")
@@ -99,13 +82,12 @@ def suggestion(disease, result):
             "neg": "Exercise daily to keep your brain and nerves healthy.Eat antioxidant-rich foods like fruits and vegetables.Avoid exposure to toxins, chemicals, and pesticides.Protect your head from injuries and maintain overall brain health."
         }
     }
-    key = "pos" if result == 1 else "neg"
-    return s[disease][key]
+    return s[disease]["pos" if result == 1 else "neg"]
 
 
-# =========================
+# -------------------------
 # Auth UI
-# =========================
+# -------------------------
 def ui_signup():
     st.subheader("Create Account")
     with st.form("signup"):
@@ -135,18 +117,17 @@ def ui_login():
             user = login_user(e, p)
             if user:
                 st.session_state.logged = True
-                st.session_state.username = user[1]
+                st.session_state.username = user["username"]
                 st.experimental_rerun()
             else:
                 st.error("Wrong email or password")
 
 
-# =========================
+# -------------------------
 # Main App
-# =========================
+# -------------------------
 def main():
     st.set_page_config(page_title="Disease Prediction", layout="wide")
-    create_user_table()
 
     if "logged" not in st.session_state:
         st.session_state.logged = False
@@ -170,13 +151,13 @@ def main():
 
     diabetes_model, heart_model, park_model = load_models()
 
-    # HOME
+    # HOME PAGE
     if page == "Home":
         st.header(f"Welcome, {st.session_state.username} 👋")
         st.header("DISEASE PREDICTION MODEL")
-        st.info("Disease prediction uses medical data and machine learning models to estimate the likelihood of a person developing a certain illness. It analyzes symptoms, test results, lifestyle factors, and historical health records to provide early warnings. This helps patients take preventive steps and receive timely treatment before the disease becomes serious.Select a model from sidebar to start prediction.")
+        st.info("Disease prediction uses medical data and machine learning models to estimate the likelihood of a person developing a certain illness.")
 
-    # 🔹 Diabetes Page
+    # DIABETES PAGE
     if page == "Diabetes":
         st.title("🩸 Diabetes Prediction")
         if diabetes_model is None:
@@ -196,7 +177,7 @@ def main():
                 except:
                     st.error("Invalid inputs!")
 
-    # 🔹 Heart Disease Page
+    # HEART PAGE
     if page == "Heart":
         st.title("❤ Heart Disease Prediction")
         if heart_model is None:
@@ -216,7 +197,7 @@ def main():
                 except:
                     st.error("Invalid Input")
 
-    # 🔹 Parkinsons Page (FIXED)
+    # PARKINSON PAGE
     if page == "Parkinsons":
         st.title("🧠 Parkinson's Disease Prediction")
 
@@ -251,8 +232,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
