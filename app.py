@@ -19,11 +19,10 @@ def connect_db():
             host="db4free.net",
             user="sabbir_1420",
             password="Sabbir1420",
-            database="disease1_db",
-            port=3306
+            database="disease1_db"
         )
         return conn
-     except:
+    except:
         return None
 
 
@@ -252,6 +251,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
